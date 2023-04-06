@@ -1,5 +1,4 @@
 use chrono::prelude::*;
-
 use date_differencer::{add_date_time_diff, date_diff, date_time_diff};
 
 fn main() {

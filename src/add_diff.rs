@@ -1,8 +1,6 @@
-use chrono::prelude::*;
-use chrono::{LocalResult, TimeDelta};
+use chrono::{prelude::*, LocalResult, TimeDelta};
 
-use super::constants::*;
-use super::DateTimeDiff;
+use super::{constants::*, DateTimeDiff};
 
 #[inline]
 fn month_add(year: &mut i32, month: &mut i32, n: i32) -> Option<()> {
@@ -203,7 +201,6 @@ fn nanosecond_add(
 ///
 /// ```rust
 /// use chrono::prelude::*;
-///
 /// use date_differencer::{add_date_time_diff, DateDiffResult};
 ///
 /// let date = Local.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap();
@@ -215,7 +212,10 @@ fn nanosecond_add(
 /// })
 /// .unwrap();
 ///
-/// assert_eq!(Local.with_ymd_and_hms(2001, 1, 2, 0, 0, 0).unwrap(), date_after_1_year_1_day)
+/// assert_eq!(
+///     Local.with_ymd_and_hms(2001, 1, 2, 0, 0, 0).unwrap(),
+///     date_after_1_year_1_day
+/// )
 /// ```
 pub fn add_date_time_diff<Tz: TimeZone>(
     from: DateTime<Tz>,
@@ -311,7 +311,7 @@ pub fn add_date_time_diff<Tz: TimeZone>(
                 Some(v) => LocalResult::Single(v),
                 None => LocalResult::None,
             }
-        }
+        },
         LocalResult::Ambiguous(a, b) => {
             let delta = TimeDelta::nanoseconds(nanosecond as i64);
             LocalResult::Ambiguous(
@@ -324,7 +324,7 @@ pub fn add_date_time_diff<Tz: TimeZone>(
                     None => return LocalResult::None,
                 },
             )
-        }
+        },
         LocalResult::None => LocalResult::None,
     }
 }

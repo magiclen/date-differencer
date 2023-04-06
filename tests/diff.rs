@@ -1,7 +1,5 @@
-use chrono::prelude::*;
-use chrono::{Months, TimeDelta};
+use chrono::{prelude::*, Months, TimeDelta};
 use date_differencer::*;
-
 use random_number::random;
 
 fn random_date() -> DateTime<Local> {
@@ -171,18 +169,16 @@ fn basic_diff_1_year_1_month_1_day_1_hour_1_minute_1_second_1_nanosecond() {
         + TimeDelta::nanoseconds(1);
 
     let expect_date_result = DateDiffResult {
-        years: 1,
-        months: 1,
-        days: 1,
+        years: 1, months: 1, days: 1
     };
 
     let expect_date_time_result = DateTimeDiffResult {
-        years: 1,
-        months: 1,
-        days: 1,
-        hours: 1,
-        minutes: 1,
-        seconds: 1,
+        years:       1,
+        months:      1,
+        days:        1,
+        hours:       1,
+        minutes:     1,
+        seconds:     1,
         nanoseconds: 1,
     };
 

@@ -6,18 +6,18 @@ use super::constants::*;
 
 #[derive(Debug)]
 struct TimeDiffResult {
-    pub(crate) hours: i32,
-    pub(crate) minutes: i32,
-    pub(crate) seconds: i32,
+    pub(crate) hours:       i32,
+    pub(crate) minutes:     i32,
+    pub(crate) seconds:     i32,
     pub(crate) nanoseconds: i32,
 }
 
 /// The result of the `date_diff` function.
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct DateDiffResult {
-    pub years: i32,
+    pub years:  i32,
     pub months: i32,
-    pub days: i32,
+    pub days:   i32,
 }
 
 impl DateDiffResult {
@@ -35,19 +35,19 @@ impl DateDiffResult {
 #[derive(Debug)]
 struct _DateDiffResult {
     pub(crate) earlier_nanoseconds_of_day: u64,
-    pub(crate) later_nanoseconds_of_day: u64,
-    pub(crate) result: DateDiffResult,
+    pub(crate) later_nanoseconds_of_day:   u64,
+    pub(crate) result:                     DateDiffResult,
 }
 
 /// The result of the `date_time_diff` function.
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct DateTimeDiffResult {
-    pub years: i32,
-    pub months: i32,
-    pub days: i32,
-    pub hours: i32,
-    pub minutes: i32,
-    pub seconds: i32,
+    pub years:       i32,
+    pub months:      i32,
+    pub days:        i32,
+    pub hours:       i32,
+    pub minutes:     i32,
+    pub seconds:     i32,
     pub nanoseconds: i32,
 }
 
@@ -83,9 +83,7 @@ impl From<DateTimeDiffResult> for DateDiffResult {
     #[inline]
     fn from(value: DateTimeDiffResult) -> Self {
         DateDiffResult {
-            years: value.years,
-            months: value.months,
-            days: value.days,
+            years: value.years, months: value.months, days: value.days
         }
     }
 }
@@ -194,9 +192,9 @@ const fn _nanoseconds_to_units(mut nanoseconds: u64) -> TimeDiffResult {
     nanoseconds -= s * SECOND_NANOSECONDS;
 
     TimeDiffResult {
-        hours: h as i32,
-        minutes: m as i32,
-        seconds: s as i32,
+        hours:       h as i32,
+        minutes:     m as i32,
+        seconds:     s as i32,
         nanoseconds: nanoseconds as i32,
     }
 }
@@ -320,7 +318,7 @@ fn _date_diff<Tz: TimeZone>(
 
                 months = month_diff - 1;
             }
-        }
+        },
         Ordering::Less => {
             // e.g. 2009-11 to 2010-03
 
@@ -335,7 +333,7 @@ fn _date_diff<Tz: TimeZone>(
 
                 months = month_diff + 11;
             }
-        }
+        },
         Ordering::Equal => {
             // month_diff == 0, e.g. 2009-12 to 2010-12
 
@@ -350,7 +348,7 @@ fn _date_diff<Tz: TimeZone>(
                 years = year_diff - 1;
                 months = 11;
             }
-        }
+        },
     }
 
     if later_date >= earlier_date {
@@ -410,11 +408,11 @@ fn _date_diff<Tz: TimeZone>(
 ///
 /// ```rust
 /// use chrono::prelude::*;
-///
 /// use date_differencer::{date_diff, DateDiffResult};
 ///
 /// let date = Local.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap();
-/// let date_after_1_year_1_day = Local.with_ymd_and_hms(2001, 1, 2, 0, 0, 0).unwrap();
+/// let date_after_1_year_1_day =
+///     Local.with_ymd_and_hms(2001, 1, 2, 0, 0, 0).unwrap();
 ///
 /// assert_eq!(
 ///     DateDiffResult {
@@ -440,11 +438,11 @@ pub fn date_diff<Tz: TimeZone>(from: DateTime<Tz>, to: DateTime<Tz>) -> DateDiff
 ///
 /// ```rust
 /// use chrono::prelude::*;
-///
 /// use date_differencer::{date_time_diff, DateTimeDiffResult};
 ///
 /// let date = Local.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap();
-/// let date_after_1_year_1_day_5_minutes = Local.with_ymd_and_hms(2001, 1, 2, 0, 5, 0).unwrap();
+/// let date_after_1_year_1_day_5_minutes =
+///     Local.with_ymd_and_hms(2001, 1, 2, 0, 5, 0).unwrap();
 ///
 /// assert_eq!(
 ///     DateTimeDiffResult {
@@ -470,15 +468,15 @@ pub fn date_time_diff<Tz: TimeZone>(from: DateTime<Tz>, to: DateTime<Tz>) -> Dat
             let date_diff = date_diff.result;
 
             DateTimeDiffResult {
-                years: date_diff.years,
-                months: date_diff.months,
-                days: date_diff.days,
-                hours: time_diff.hours,
-                minutes: time_diff.minutes,
-                seconds: time_diff.seconds,
+                years:       date_diff.years,
+                months:      date_diff.months,
+                days:        date_diff.days,
+                hours:       time_diff.hours,
+                minutes:     time_diff.minutes,
+                seconds:     time_diff.seconds,
                 nanoseconds: time_diff.nanoseconds,
             }
-        }
+        },
         Ordering::Less => {
             let date_diff = _date_diff(to, from, true);
 
@@ -490,15 +488,15 @@ pub fn date_time_diff<Tz: TimeZone>(from: DateTime<Tz>, to: DateTime<Tz>) -> Dat
             let date_diff = date_diff.result;
 
             DateTimeDiffResult {
-                years: -date_diff.years,
-                months: -date_diff.months,
-                days: -date_diff.days,
-                hours: -time_diff.hours,
-                minutes: -time_diff.minutes,
-                seconds: -time_diff.seconds,
+                years:       -date_diff.years,
+                months:      -date_diff.months,
+                days:        -date_diff.days,
+                hours:       -time_diff.hours,
+                minutes:     -time_diff.minutes,
+                seconds:     -time_diff.seconds,
                 nanoseconds: -time_diff.nanoseconds,
             }
-        }
+        },
         Ordering::Equal => DateTimeDiffResult::default(),
     }
 }

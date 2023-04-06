@@ -3,6 +3,7 @@ name = "date-differencer"
 version = "0.1.0"
 authors = ["Magic Len <len@magiclen.org>"]
 edition = "2021"
+rust-version = "1.56"
 repository = "https://github.com/magiclen/date-differencer"
 homepage = "https://magiclen.org/date-differencer"
 keywords = ["date", "time", "age", "diff", "datediff"]
