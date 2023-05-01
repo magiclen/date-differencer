@@ -1,4 +1,4 @@
-use chrono::{prelude::*, LocalResult, TimeDelta};
+use chrono::{prelude::*, Duration, LocalResult};
 
 use super::{constants::*, DateTimeDiff};
 
@@ -307,13 +307,13 @@ pub fn add_date_time_diff<Tz: TimeZone>(
         second as u32,
     ) {
         LocalResult::Single(v) => {
-            match v.checked_add_signed(TimeDelta::nanoseconds(nanosecond as i64)) {
+            match v.checked_add_signed(Duration::nanoseconds(nanosecond as i64)) {
                 Some(v) => LocalResult::Single(v),
                 None => LocalResult::None,
             }
         },
         LocalResult::Ambiguous(a, b) => {
-            let delta = TimeDelta::nanoseconds(nanosecond as i64);
+            let delta = Duration::nanoseconds(nanosecond as i64);
             LocalResult::Ambiguous(
                 match a.checked_add_signed(delta) {
                     Some(v) => v,

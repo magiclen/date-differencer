@@ -13,7 +13,7 @@ license = "MIT"
 include = ["src/**/*", "Cargo.toml", "README.md", "LICENSE"]
 
 [dependencies]
-chrono = { git = "https://github.com/chronotope/chrono.git" } # 0.4 has obvious bugs, 0.5 seems fine
+chrono = "0.4"
 
 year-helper = "0.2.0"
 

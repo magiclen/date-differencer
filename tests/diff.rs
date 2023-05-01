@@ -1,4 +1,4 @@
-use chrono::{prelude::*, Months, TimeDelta};
+use chrono::{prelude::*, Duration, Months};
 use date_differencer::*;
 use random_number::random;
 
@@ -19,7 +19,7 @@ fn basic_same_date() {
 #[test]
 fn basic_diff_1_nanosecond() {
     let date = Local::now();
-    let date_plus = date + TimeDelta::nanoseconds(1);
+    let date_plus = date + Duration::nanoseconds(1);
 
     let expect_date_result = DateDiffResult::default();
     let expect_date_time_result = DateTimeDiffResult {
@@ -37,7 +37,7 @@ fn basic_diff_1_nanosecond() {
 #[test]
 fn basic_diff_1_second() {
     let date = Local::now();
-    let date_plus = date + TimeDelta::seconds(1);
+    let date_plus = date + Duration::seconds(1);
 
     let expect_date_result = DateDiffResult::default();
     let expect_date_time_result = DateTimeDiffResult {
@@ -55,7 +55,7 @@ fn basic_diff_1_second() {
 #[test]
 fn basic_diff_1_minute() {
     let date = Local::now();
-    let date_plus = date + TimeDelta::minutes(1);
+    let date_plus = date + Duration::minutes(1);
 
     let expect_date_result = DateDiffResult::default();
     let expect_date_time_result = DateTimeDiffResult {
@@ -73,7 +73,7 @@ fn basic_diff_1_minute() {
 #[test]
 fn basic_diff_1_hour() {
     let date = Local::now();
-    let date_plus = date + TimeDelta::hours(1);
+    let date_plus = date + Duration::hours(1);
 
     let expect_date_result = DateDiffResult::default();
     let expect_date_time_result = DateTimeDiffResult {
@@ -91,7 +91,7 @@ fn basic_diff_1_hour() {
 #[test]
 fn basic_diff_1_day() {
     let date = Local::now();
-    let date_plus = date + TimeDelta::days(1);
+    let date_plus = date + Duration::days(1);
 
     let expect_date_result = DateDiffResult {
         days: 1,
@@ -156,17 +156,17 @@ fn basic_diff_1_year() {
 
 #[test]
 fn basic_diff_1_year_1_month_1_day_1_hour_1_minute_1_second_1_nanosecond() {
-    let date = Local.with_ymd_and_hms(2001, 2, 2, 2, 2, 2).unwrap() + TimeDelta::nanoseconds(1);
+    let date = Local.with_ymd_and_hms(2001, 2, 2, 2, 2, 2).unwrap() + Duration::nanoseconds(1);
     let date_plus = date
         .checked_add_months(Months::new(12))
         .unwrap()
         .checked_add_months(Months::new(1))
         .unwrap()
-        + TimeDelta::days(1)
-        + TimeDelta::hours(1)
-        + TimeDelta::minutes(1)
-        + TimeDelta::seconds(1)
-        + TimeDelta::nanoseconds(1);
+        + Duration::days(1)
+        + Duration::hours(1)
+        + Duration::minutes(1)
+        + Duration::seconds(1)
+        + Duration::nanoseconds(1);
 
     let expect_date_result = DateDiffResult {
         years: 1, months: 1, days: 1
