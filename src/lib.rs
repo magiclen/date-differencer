@@ -76,6 +76,8 @@ Explanation:
 ```
 */
 
+#![no_std]
+
 mod constants;
 
 mod add_diff;

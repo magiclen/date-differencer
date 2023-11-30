@@ -1,21 +1,30 @@
 [package]
 name = "date-differencer"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Magic Len <len@magiclen.org>"]
 edition = "2021"
 rust-version = "1.60"
 repository = "https://github.com/magiclen/date-differencer"
 homepage = "https://magiclen.org/date-differencer"
 keywords = ["date", "time", "age", "diff", "datediff"]
-categories = ["date-and-time"]
+categories = ["no-std", "date-and-time"]
 description = "Calculate the time interval between two `DateTime` instances and output the result in years plus months plus days plus hours plus minutes plus seconds plus nanoseconds (instead of representing the same duration in different units). This library is useful for lifespan check and age calculation."
 license = "MIT"
 include = ["src/**/*", "Cargo.toml", "README.md", "LICENSE"]
 
 [dependencies]
-chrono = "0.4"
+chrono = { version = "0.4", default-features = false }
 
-year-helper = "0.2.0"
+year-helper = "0.2"
 
 [dev-dependencies]
 random-number = "0.1.8"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+
+[[example]]
+name = "reverse"
+required-features = ["chrono/clock"]
+
+[[example]]
+name = "simple"
+required-features = ["chrono/clock"]
