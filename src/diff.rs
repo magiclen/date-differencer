@@ -214,7 +214,7 @@ const fn _time_diff(
 }
 
 #[inline]
-fn _date_time_nanoseconds_of_day<Tz: TimeZone>(date_time: DateTime<Tz>) -> u64 {
+fn _date_time_nanoseconds_of_day(date_time: impl Timelike) -> u64 {
     (date_time.hour() as u64 * HOUR_NANOSECONDS)
         + (date_time.minute() as u64 * MINUTE_NANOSECONDS)
         + (date_time.second() as u64 * SECOND_NANOSECONDS)
@@ -236,9 +236,9 @@ const fn _time_nanoseconds_of_day(timestamp: i64) -> u64 {
     }
 }
 
-fn _date_diff<Tz: TimeZone>(
-    earlier: DateTime<Tz>,
-    later: DateTime<Tz>,
+fn _date_diff(
+    earlier: impl Datelike + Timelike,
+    later: impl Datelike + Timelike,
     start_from_later: bool,
 ) -> _DateDiffResult {
     let mut earlier_year = earlier.year();
@@ -424,7 +424,7 @@ fn _date_diff<Tz: TimeZone>(
 /// );
 /// ```
 #[inline]
-pub fn date_diff<Tz: TimeZone>(from: DateTime<Tz>, to: DateTime<Tz>) -> DateDiffResult {
+pub fn date_diff<DT: Datelike + Timelike + Ord>(from: DT, to: DT) -> DateDiffResult {
     match to.cmp(&from) {
         Ordering::Greater => _date_diff(from, to, false).result,
         Ordering::Less => _date_diff(to, from, true).result.into_neg(),
@@ -455,7 +455,7 @@ pub fn date_diff<Tz: TimeZone>(from: DateTime<Tz>, to: DateTime<Tz>) -> DateDiff
 /// );
 /// ```
 #[inline]
-pub fn date_time_diff<Tz: TimeZone>(from: DateTime<Tz>, to: DateTime<Tz>) -> DateTimeDiffResult {
+pub fn date_time_diff<DT: Datelike + Timelike + Ord>(from: DT, to: DT) -> DateTimeDiffResult {
     match to.cmp(&from) {
         Ordering::Greater => {
             let date_diff = _date_diff(from, to, false);
