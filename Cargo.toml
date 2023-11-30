@@ -20,11 +20,3 @@ year-helper = "0.2"
 [dev-dependencies]
 random-number = "0.1.8"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
-
-[[example]]
-name = "reverse"
-required-features = ["chrono/clock"]
-
-[[example]]
-name = "simple"
-required-features = ["chrono/clock"]
