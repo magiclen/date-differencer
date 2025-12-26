@@ -4,10 +4,7 @@ use super::{constants::*, DateTimeDiff};
 
 #[inline]
 fn month_add(year: &mut i32, month: &mut i32, n: i32) -> Option<()> {
-    *month = match month.checked_add(n) {
-        Some(v) => v,
-        None => return None,
-    };
+    *month = month.checked_add(n)?;
 
     if *month >= 12 {
         *year += *month / 12;
@@ -27,10 +24,7 @@ fn month_add(year: &mut i32, month: &mut i32, n: i32) -> Option<()> {
 
 #[inline]
 fn date_add(year: &mut i32, month: &mut i32, date: &mut i32, n: i32) -> Option<()> {
-    *date = match date.checked_add(n) {
-        Some(v) => v,
-        None => return None,
-    };
+    *date = date.checked_add(n)?;
 
     if *date == 0 {
         month_add(year, month, -1)?;
@@ -70,10 +64,7 @@ fn date_add(year: &mut i32, month: &mut i32, date: &mut i32, n: i32) -> Option<(
 
 #[inline]
 fn hour_add(year: &mut i32, month: &mut i32, date: &mut i32, hour: &mut i32, n: i32) -> Option<()> {
-    *hour = match hour.checked_add(n) {
-        Some(v) => v,
-        None => return None,
-    };
+    *hour = hour.checked_add(n)?;
 
     if *hour >= 24 {
         date_add(year, month, date, *hour / 24)?;
@@ -100,10 +91,7 @@ fn minute_add(
     minute: &mut i32,
     n: i32,
 ) -> Option<()> {
-    *minute = match minute.checked_add(n) {
-        Some(v) => v,
-        None => return None,
-    };
+    *minute = minute.checked_add(n)?;
 
     if *minute >= 60 {
         hour_add(year, month, date, hour, *minute / 60)?;
@@ -131,10 +119,7 @@ fn second_add(
     second: &mut i32,
     n: i32,
 ) -> Option<()> {
-    *second = match second.checked_add(n) {
-        Some(v) => v,
-        None => return None,
-    };
+    *second = second.checked_add(n)?;
 
     if *second >= 60 {
         minute_add(year, month, date, hour, minute, *second / 60)?;
@@ -166,10 +151,7 @@ fn nanosecond_add(
 ) -> Option<()> {
     const SECOND_NANOSECONDS_I32: i32 = SECOND_NANOSECONDS as i32;
 
-    *nanosecond = match nanosecond.checked_add(n) {
-        Some(v) => v,
-        None => return None,
-    };
+    *nanosecond = nanosecond.checked_add(n)?;
 
     if *nanosecond >= SECOND_NANOSECONDS_I32 {
         second_add(year, month, date, hour, minute, second, *nanosecond / SECOND_NANOSECONDS_I32)?;

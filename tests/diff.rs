@@ -1,11 +1,13 @@
 use chrono::{prelude::*, Duration, Months};
 use date_differencer::*;
-use random_number::random;
+use rand::Rng;
 
 fn random_date() -> DateTime<Local> {
-    Local.from_utc_datetime(
-        &NaiveDateTime::from_timestamp_millis(random!(-1000000000000, 3000000000000)).unwrap(),
-    )
+    let mut rng = rand::rng();
+
+    let random_timestamp_millis = rng.random_range(-1000000000000..=3000000000000);
+
+    DateTime::from_timestamp_millis(random_timestamp_millis).unwrap().with_timezone(&Local)
 }
 
 #[test]
