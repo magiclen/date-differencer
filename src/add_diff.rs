@@ -151,28 +151,15 @@ fn nanosecond_add(
 ) -> Option<()> {
     const SECOND_NANOSECONDS_I32: i32 = SECOND_NANOSECONDS as i32;
 
-    *nanosecond = nanosecond.checked_add(n)?;
+    let total_nanoseconds = nanosecond.checked_add(n)?;
+    let seconds = total_nanoseconds.div_euclid(SECOND_NANOSECONDS_I32);
+    let normalized_nanoseconds = total_nanoseconds.rem_euclid(SECOND_NANOSECONDS_I32);
 
-    if *nanosecond >= SECOND_NANOSECONDS_I32 {
-        second_add(year, month, date, hour, minute, second, *nanosecond / SECOND_NANOSECONDS_I32)?;
-        *nanosecond %= SECOND_NANOSECONDS_I32;
-    } else if *nanosecond < 0 {
-        second_add(
-            year,
-            month,
-            date,
-            hour,
-            minute,
-            second,
-            *nanosecond / SECOND_NANOSECONDS_I32 - 1,
-        )?;
-
-        *nanosecond = SECOND_NANOSECONDS_I32 - (-*nanosecond % SECOND_NANOSECONDS_I32);
-
-        if *nanosecond == 60 {
-            *nanosecond = 0;
-        }
+    if seconds != 0 {
+        second_add(year, month, date, hour, minute, second, seconds)?;
     }
+
+    *nanosecond = normalized_nanoseconds;
 
     Some(())
 }
@@ -199,10 +186,12 @@ fn nanosecond_add(
 ///     date_after_1_year_1_day
 /// )
 /// ```
-pub fn add_date_time_diff<Tz: TimeZone>(
+pub fn add_date_time_diff<Tz>(
     from: DateTime<Tz>,
-    date_time_diff: &dyn DateTimeDiff,
-) -> LocalResult<DateTime<Tz>> {
+    date_time_diff: &impl DateTimeDiff,
+) -> LocalResult<DateTime<Tz>>
+where
+    Tz: TimeZone, {
     let mut year = match from.year().checked_add(date_time_diff.years()) {
         Some(v) => v,
         None => return LocalResult::None,

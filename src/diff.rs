@@ -221,21 +221,6 @@ fn _date_time_nanoseconds_of_day(date_time: impl Timelike) -> u64 {
         + date_time.nanosecond() as u64
 }
 
-#[inline]
-const fn _time_nanoseconds_of_day(timestamp: i64) -> u64 {
-    if timestamp >= 0 {
-        (timestamp as u64) % DAY_NANOSECONDS
-    } else {
-        let mut t = DAY_NANOSECONDS + ((-timestamp) as u64 % DAY_NANOSECONDS);
-
-        if t == DAY_NANOSECONDS {
-            t = 0;
-        }
-
-        t
-    }
-}
-
 fn _date_diff(
     earlier: impl Datelike + Timelike,
     later: impl Datelike + Timelike,

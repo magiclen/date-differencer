@@ -1,13 +1,10 @@
 use chrono::{prelude::*, Duration, Months};
 use date_differencer::*;
-use rand::Rng;
 
-fn random_date() -> DateTime<Local> {
-    let mut rng = rand::rng();
+fn random_date() -> DateTime<Utc> {
+    let random_timestamp_millis = rand::random_range(-1_000_000_000_000..=3_000_000_000_000);
 
-    let random_timestamp_millis = rng.random_range(-1000000000000..=3000000000000);
-
-    DateTime::from_timestamp_millis(random_timestamp_millis).unwrap().with_timezone(&Local)
+    DateTime::from_timestamp_millis(random_timestamp_millis).unwrap()
 }
 
 #[test]
@@ -201,9 +198,10 @@ fn add_diff_back() {
         let b = random_date();
 
         let diff = date_time_diff(a, b);
+        let added = add_date_time_diff(a, &diff);
+        let earliest = added.earliest().unwrap();
+        let latest = added.latest().unwrap();
 
-        assert!((add_date_time_diff(a, &diff).latest().unwrap()
-            ..=add_date_time_diff(a, &diff).earliest().unwrap())
-            .contains(&b));
+        assert!((earliest..=latest).contains(&b));
     }
 }
