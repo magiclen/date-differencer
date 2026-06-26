@@ -22,6 +22,9 @@ jobs:
           - nightly
         features:
           -
+          - --features chrono
+          - --features time
+          - --all-features
     name: Test ${{ matrix.toolchain }} on ${{ matrix.os }} (${{ matrix.features }})
     runs-on: ${{ matrix.os }}
     steps:
@@ -41,9 +44,12 @@ jobs:
           - macos-latest
           - windows-latest
         toolchain:
-          - "1.71"
+          - "1.85"
         features:
           -
+          - --features chrono
+          - --features time
+          - --all-features
     name: Test ${{ matrix.toolchain }} on ${{ matrix.os }} (${{ matrix.features }})
     runs-on: ${{ matrix.os }}
     steps:

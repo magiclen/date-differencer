@@ -1,6 +1,9 @@
-use core::cmp::Ordering;
+#[cfg(feature = "chrono")]
+mod chrono_support;
+#[cfg(feature = "time")]
+mod time_support;
 
-use chrono::prelude::*;
+use core::cmp::Ordering;
 
 use super::constants::*;
 
@@ -126,6 +129,23 @@ pub trait DateTimeDiff {
     }
 }
 
+/// A trait to expose the date and time fields used by this crate.
+pub trait DateTimeParts: Ord {
+    fn year(&self) -> i32;
+
+    fn month(&self) -> u8;
+
+    fn day(&self) -> u8;
+
+    fn hour(&self) -> u8;
+
+    fn minute(&self) -> u8;
+
+    fn second(&self) -> u8;
+
+    fn nanosecond(&self) -> u32;
+}
+
 impl DateTimeDiff for DateDiffResult {
     #[inline]
     fn years(&self) -> i32 {
@@ -214,7 +234,7 @@ const fn _time_diff(
 }
 
 #[inline]
-fn _date_time_nanoseconds_of_day(date_time: impl Timelike) -> u64 {
+fn _date_time_nanoseconds_of_day(date_time: &impl DateTimeParts) -> u64 {
     (date_time.hour() as u64 * HOUR_NANOSECONDS)
         + (date_time.minute() as u64 * MINUTE_NANOSECONDS)
         + (date_time.second() as u64 * SECOND_NANOSECONDS)
@@ -222,17 +242,17 @@ fn _date_time_nanoseconds_of_day(date_time: impl Timelike) -> u64 {
 }
 
 fn _date_diff(
-    earlier: impl Datelike + Timelike,
-    later: impl Datelike + Timelike,
+    earlier: &impl DateTimeParts,
+    later: &impl DateTimeParts,
     start_from_later: bool,
 ) -> _DateDiffResult {
     let mut earlier_year = earlier.year();
-    let mut earlier_month = earlier.month() as u8;
-    let mut earlier_date = earlier.day() as u8;
+    let mut earlier_month = earlier.month();
+    let mut earlier_date = earlier.day();
 
     let mut later_year = later.year();
-    let mut later_month = later.month() as u8;
-    let mut later_date = later.day() as u8;
+    let mut later_month = later.month();
+    let mut later_date = later.day();
 
     let later_nanoseconds_of_day = _date_time_nanoseconds_of_day(later);
     let earlier_nanoseconds_of_day = _date_time_nanoseconds_of_day(earlier);
@@ -392,8 +412,10 @@ fn _date_diff(
 /// # Example
 ///
 /// ```rust
+/// # #[cfg(feature = "chrono")]
+/// # {
 /// use chrono::prelude::*;
-/// use date_differencer::{date_diff, DateDiffResult};
+/// use date_differencer::{DateDiffResult, date_diff};
 ///
 /// let date = Local.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap();
 /// let date_after_1_year_1_day =
@@ -407,12 +429,13 @@ fn _date_diff(
 ///     },
 ///     date_diff(date, date_after_1_year_1_day)
 /// );
+/// # }
 /// ```
 #[inline]
-pub fn date_diff<DT: Datelike + Timelike + Ord>(from: DT, to: DT) -> DateDiffResult {
+pub fn date_diff<DT: DateTimeParts>(from: DT, to: DT) -> DateDiffResult {
     match to.cmp(&from) {
-        Ordering::Greater => _date_diff(from, to, false).result,
-        Ordering::Less => _date_diff(to, from, true).result.into_neg(),
+        Ordering::Greater => _date_diff(&from, &to, false).result,
+        Ordering::Less => _date_diff(&to, &from, true).result.into_neg(),
         Ordering::Equal => DateDiffResult::default(),
     }
 }
@@ -422,8 +445,10 @@ pub fn date_diff<DT: Datelike + Timelike + Ord>(from: DT, to: DT) -> DateDiffRes
 /// # Example
 ///
 /// ```rust
+/// # #[cfg(feature = "chrono")]
+/// # {
 /// use chrono::prelude::*;
-/// use date_differencer::{date_time_diff, DateTimeDiffResult};
+/// use date_differencer::{DateTimeDiffResult, date_time_diff};
 ///
 /// let date = Local.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap();
 /// let date_after_1_year_1_day_5_minutes =
@@ -438,12 +463,13 @@ pub fn date_diff<DT: Datelike + Timelike + Ord>(from: DT, to: DT) -> DateDiffRes
 ///     },
 ///     date_time_diff(date, date_after_1_year_1_day_5_minutes)
 /// );
+/// # }
 /// ```
 #[inline]
-pub fn date_time_diff<DT: Datelike + Timelike + Ord>(from: DT, to: DT) -> DateTimeDiffResult {
+pub fn date_time_diff<DT: DateTimeParts>(from: DT, to: DT) -> DateTimeDiffResult {
     match to.cmp(&from) {
         Ordering::Greater => {
-            let date_diff = _date_diff(from, to, false);
+            let date_diff = _date_diff(&from, &to, false);
 
             let time_diff = _time_diff(
                 date_diff.earlier_nanoseconds_of_day,
@@ -463,7 +489,7 @@ pub fn date_time_diff<DT: Datelike + Timelike + Ord>(from: DT, to: DT) -> DateTi
             }
         },
         Ordering::Less => {
-            let date_diff = _date_diff(to, from, true);
+            let date_diff = _date_diff(&to, &from, true);
 
             let time_diff = _time_diff(
                 date_diff.earlier_nanoseconds_of_day,

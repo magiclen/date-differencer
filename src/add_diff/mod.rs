@@ -1,16 +1,34 @@
-use chrono::{prelude::*, Duration, LocalResult};
+#[cfg(feature = "chrono")]
+mod chrono_support;
+#[cfg(feature = "time")]
+mod time_support;
 
-use super::{constants::*, DateTimeDiff};
+#[cfg(any(feature = "chrono", feature = "time"))]
+use super::constants::*;
+use super::{DateTimeDiff, DateTimeParts};
 
+#[cfg(any(feature = "chrono", feature = "time"))]
+#[derive(Debug, Clone, Copy)]
+struct AddedDateTimeParts {
+    year:       i32,
+    month:      u8,
+    day:        u8,
+    hour:       u8,
+    minute:     u8,
+    second:     u8,
+    nanosecond: u32,
+}
+
+#[cfg(any(feature = "chrono", feature = "time"))]
 #[inline]
 fn month_add(year: &mut i32, month: &mut i32, n: i32) -> Option<()> {
     *month = month.checked_add(n)?;
 
     if *month >= 12 {
-        *year += *month / 12;
+        *year = year.checked_add(*month / 12)?;
         *month %= 12;
     } else if *month < 0 {
-        *year += *month / 12 - 1;
+        *year = year.checked_add(*month / 12 - 1)?;
 
         *month = 12 - (-*month % 12);
 
@@ -22,6 +40,7 @@ fn month_add(year: &mut i32, month: &mut i32, n: i32) -> Option<()> {
     Some(())
 }
 
+#[cfg(any(feature = "chrono", feature = "time"))]
 #[inline]
 fn date_add(year: &mut i32, month: &mut i32, date: &mut i32, n: i32) -> Option<()> {
     *date = date.checked_add(n)?;
@@ -62,6 +81,7 @@ fn date_add(year: &mut i32, month: &mut i32, date: &mut i32, n: i32) -> Option<(
     Some(())
 }
 
+#[cfg(any(feature = "chrono", feature = "time"))]
 #[inline]
 fn hour_add(year: &mut i32, month: &mut i32, date: &mut i32, hour: &mut i32, n: i32) -> Option<()> {
     *hour = hour.checked_add(n)?;
@@ -82,6 +102,7 @@ fn hour_add(year: &mut i32, month: &mut i32, date: &mut i32, hour: &mut i32, n: 
     Some(())
 }
 
+#[cfg(any(feature = "chrono", feature = "time"))]
 #[inline]
 fn minute_add(
     year: &mut i32,
@@ -109,6 +130,7 @@ fn minute_add(
     Some(())
 }
 
+#[cfg(any(feature = "chrono", feature = "time"))]
 #[inline]
 fn second_add(
     year: &mut i32,
@@ -137,6 +159,7 @@ fn second_add(
     Some(())
 }
 
+#[cfg(any(feature = "chrono", feature = "time"))]
 #[allow(clippy::too_many_arguments)]
 #[inline]
 fn nanosecond_add(
@@ -164,13 +187,86 @@ fn nanosecond_add(
     Some(())
 }
 
+#[cfg(any(feature = "chrono", feature = "time"))]
+fn add_date_time_parts(
+    from: &impl DateTimeParts,
+    date_time_diff: &impl DateTimeDiff,
+) -> Option<AddedDateTimeParts> {
+    let mut year = from.year().checked_add(date_time_diff.years())?;
+    let mut month = from.month() as i32 - 1;
+
+    month_add(&mut year, &mut month, date_time_diff.months())?;
+
+    let mut date = from.day() as i32;
+
+    let days_in_month = year_helper::get_days_in_month(year, (month + 1) as u8).unwrap() as i32;
+
+    if date > days_in_month {
+        date = days_in_month;
+    }
+
+    date_add(&mut year, &mut month, &mut date, date_time_diff.days())?;
+
+    let mut hour = from.hour() as i32;
+
+    hour_add(&mut year, &mut month, &mut date, &mut hour, date_time_diff.hours())?;
+
+    let mut minute = from.minute() as i32;
+
+    minute_add(&mut year, &mut month, &mut date, &mut hour, &mut minute, date_time_diff.minutes())?;
+
+    let mut second = from.second() as i32;
+
+    second_add(
+        &mut year,
+        &mut month,
+        &mut date,
+        &mut hour,
+        &mut minute,
+        &mut second,
+        date_time_diff.seconds(),
+    )?;
+
+    let mut nanosecond = from.nanosecond() as i32;
+
+    nanosecond_add(
+        &mut year,
+        &mut month,
+        &mut date,
+        &mut hour,
+        &mut minute,
+        &mut second,
+        &mut nanosecond,
+        date_time_diff.nanoseconds(),
+    )?;
+
+    Some(AddedDateTimeParts {
+        year,
+        month: (month + 1) as u8,
+        day: date as u8,
+        hour: hour as u8,
+        minute: minute as u8,
+        second: second as u8,
+        nanosecond: nanosecond as u32,
+    })
+}
+
+/// A trait for date-time types that can apply a `DateTimeDiff`.
+pub trait AddDateTimeDiff: DateTimeParts {
+    type Output;
+
+    fn add_date_time_diff(self, date_time_diff: &impl DateTimeDiff) -> Self::Output;
+}
+
 /// Calculate `from` + `date_time_diff`.
 ///
 /// # Example
 ///
 /// ```rust
+/// # #[cfg(feature = "chrono")]
+/// # {
 /// use chrono::prelude::*;
-/// use date_differencer::{add_date_time_diff, DateDiffResult};
+/// use date_differencer::{DateDiffResult, add_date_time_diff};
 ///
 /// let date = Local.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap();
 ///
@@ -185,117 +281,12 @@ fn nanosecond_add(
 ///     Local.with_ymd_and_hms(2001, 1, 2, 0, 0, 0).unwrap(),
 ///     date_after_1_year_1_day
 /// )
+/// # }
 /// ```
-pub fn add_date_time_diff<Tz>(
-    from: DateTime<Tz>,
+#[inline]
+pub fn add_date_time_diff<DT: AddDateTimeDiff>(
+    from: DT,
     date_time_diff: &impl DateTimeDiff,
-) -> LocalResult<DateTime<Tz>>
-where
-    Tz: TimeZone, {
-    let mut year = match from.year().checked_add(date_time_diff.years()) {
-        Some(v) => v,
-        None => return LocalResult::None,
-    };
-
-    let mut month = from.month0() as i32;
-
-    if month_add(&mut year, &mut month, date_time_diff.months()).is_none() {
-        return LocalResult::None;
-    }
-
-    let mut date = from.day() as i32;
-
-    let days_in_month = year_helper::get_days_in_month(year, (month + 1) as u8).unwrap() as i32;
-
-    if date > days_in_month {
-        date = days_in_month;
-    }
-
-    if date_add(&mut year, &mut month, &mut date, date_time_diff.days()).is_none() {
-        return LocalResult::None;
-    }
-
-    let mut hour = from.hour() as i32;
-
-    if hour_add(&mut year, &mut month, &mut date, &mut hour, date_time_diff.hours()).is_none() {
-        return LocalResult::None;
-    }
-
-    let mut minute = from.minute() as i32;
-
-    if minute_add(
-        &mut year,
-        &mut month,
-        &mut date,
-        &mut hour,
-        &mut minute,
-        date_time_diff.minutes(),
-    )
-    .is_none()
-    {
-        return LocalResult::None;
-    }
-
-    let mut second = from.second() as i32;
-
-    if second_add(
-        &mut year,
-        &mut month,
-        &mut date,
-        &mut hour,
-        &mut minute,
-        &mut second,
-        date_time_diff.seconds(),
-    )
-    .is_none()
-    {
-        return LocalResult::None;
-    }
-
-    let mut nanosecond = from.nanosecond() as i32;
-
-    if nanosecond_add(
-        &mut year,
-        &mut month,
-        &mut date,
-        &mut hour,
-        &mut minute,
-        &mut second,
-        &mut nanosecond,
-        date_time_diff.nanoseconds(),
-    )
-    .is_none()
-    {
-        return LocalResult::None;
-    }
-
-    match from.timezone().with_ymd_and_hms(
-        year,
-        month as u32 + 1,
-        date as u32,
-        hour as u32,
-        minute as u32,
-        second as u32,
-    ) {
-        LocalResult::Single(v) => {
-            match v.checked_add_signed(Duration::nanoseconds(nanosecond as i64)) {
-                Some(v) => LocalResult::Single(v),
-                None => LocalResult::None,
-            }
-        },
-        LocalResult::Ambiguous(a, b) => {
-            let delta = Duration::nanoseconds(nanosecond as i64);
-            LocalResult::Ambiguous(
-                match a.checked_add_signed(delta) {
-                    Some(v) => v,
-                    None => return LocalResult::None,
-                },
-                match b.checked_add_signed(delta) {
-                    Some(v) => v,
-                    None => return LocalResult::None,
-                },
-            )
-        },
-        LocalResult::None => LocalResult::None,
-    }
+) -> DT::Output {
+    from.add_date_time_diff(date_time_diff)
 }

@@ -3,14 +3,23 @@ Date Differencer
 
 [![CI](https://github.com/magiclen/date-differencer/actions/workflows/ci.yml/badge.svg)](https://github.com/magiclen/date-differencer/actions/workflows/ci.yml)
 
-Calculate the time interval between two `DateTime` instances and output the result in years plus months plus days plus hours plus minutes plus seconds plus nanoseconds (instead of representing the same duration in different units). This library is useful for lifespan check and age calculation.
+Calculate the time interval between two supported date-time values and output the result in years plus months plus days plus hours plus minutes plus seconds plus nanoseconds (instead of representing the same duration in different units). This library is useful for lifespan check and age calculation.
+
+## Supported Date-Time Crates
+
+Date-time crate support is enabled through Cargo features. Enable only the providers your project uses.
+
+| Feature | Supported types |
+| --- | --- |
+| `chrono` | `chrono::DateTime<Tz>`, `chrono::NaiveDateTime` |
+| `time` | `time::PrimitiveDateTime`, `time::OffsetDateTime` |
 
 ## Usage
 
 ```rust
 use chrono::prelude::*;
 
-use date_differencer::{date_diff, date_time_diff, add_date_time_diff};
+use date_differencer::{add_date_time_diff, date_diff, date_time_diff};
 
 let a = Local.with_ymd_and_hms(2022, 4, 6, 0, 0, 0).unwrap();
 let b = Local.with_ymd_and_hms(2023, 6, 9, 1, 0, 0).unwrap();
