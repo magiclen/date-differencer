@@ -1,7 +1,7 @@
 #![cfg(feature = "time")]
 
 use date_differencer::*;
-use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time, UtcOffset};
+use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time, UtcDateTime, UtcOffset};
 
 fn date_time(
     year: i32,
@@ -95,6 +95,26 @@ fn offset_date_time_add_diff_back() {
     let a = date_time(2022, Month::April, 6, 0, 0, 0, 0).assume_offset(offset);
     let b = date_time(2023, Month::June, 9, 1, 0, 0, 0).assume_offset(offset);
 
+    assert_eq!(b, add_date_time_diff(a, &date_time_diff(a, b)).unwrap());
+}
+
+#[test]
+fn utc_date_time_add_diff_back() {
+    let a = UtcDateTime::new(
+        Date::from_calendar_date(2022, Month::April, 6).unwrap(),
+        Time::from_hms(0, 0, 0).unwrap(),
+    );
+    let b = UtcDateTime::new(
+        Date::from_calendar_date(2023, Month::June, 9).unwrap(),
+        Time::from_hms(1, 0, 0).unwrap(),
+    );
+
+    assert_eq!(
+        DateDiffResult {
+            years: 1, months: 2, days: 3
+        },
+        date_diff(a, b),
+    );
     assert_eq!(b, add_date_time_diff(a, &date_time_diff(a, b)).unwrap());
 }
 

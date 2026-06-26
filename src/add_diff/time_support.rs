@@ -1,4 +1,4 @@
-use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time};
+use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time, UtcDateTime};
 
 use super::{AddDateTimeDiff, AddedDateTimeParts, DateTimeDiff, add_date_time_parts};
 
@@ -32,5 +32,16 @@ impl AddDateTimeDiff for OffsetDateTime {
         let (date, time) = date_time_from_parts(add_date_time_parts(&self, date_time_diff)?)?;
 
         Some(OffsetDateTime::new_in_offset(date, time, self.offset()))
+    }
+}
+
+impl AddDateTimeDiff for UtcDateTime {
+    type Output = Option<UtcDateTime>;
+
+    #[inline]
+    fn add_date_time_diff(self, date_time_diff: &impl DateTimeDiff) -> Self::Output {
+        let (date, time) = date_time_from_parts(add_date_time_parts(&self, date_time_diff)?)?;
+
+        Some(UtcDateTime::new(date, time))
     }
 }
