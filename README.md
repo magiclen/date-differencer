@@ -12,6 +12,7 @@ Date-time crate support is enabled through Cargo features. Enable only the provi
 | Feature | Time-zone aware types | Naive/local date-time types |
 | --- | --- | --- |
 | `chrono` | `chrono::DateTime<Tz>` | `chrono::NaiveDateTime` |
+| `jiff` | `jiff::Zoned` | `jiff::civil::DateTime` |
 | `time` | `time::OffsetDateTime`, `time::UtcDateTime` | `time::PrimitiveDateTime` |
 
 Time-zone aware types keep a timezone or UTC offset in the value. Naive/local types store only calendar and clock fields, so the caller decides how to interpret them.

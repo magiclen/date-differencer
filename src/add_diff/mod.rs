@@ -1,13 +1,15 @@
 #[cfg(feature = "chrono")]
 mod chrono_support;
+#[cfg(feature = "jiff")]
+mod jiff_support;
 #[cfg(feature = "time")]
 mod time_support;
 
-#[cfg(any(feature = "chrono", feature = "time"))]
+#[cfg(any(feature = "chrono", feature = "jiff", feature = "time"))]
 use super::constants::*;
 use super::{DateTimeDiff, DateTimeParts};
 
-#[cfg(any(feature = "chrono", feature = "time"))]
+#[cfg(any(feature = "chrono", feature = "jiff", feature = "time"))]
 #[derive(Debug, Clone, Copy)]
 struct AddedDateTimeParts {
     year:       i32,
@@ -19,7 +21,7 @@ struct AddedDateTimeParts {
     nanosecond: u32,
 }
 
-#[cfg(any(feature = "chrono", feature = "time"))]
+#[cfg(any(feature = "chrono", feature = "jiff", feature = "time"))]
 #[inline]
 fn month_add(year: &mut i32, month: &mut i32, n: i32) -> Option<()> {
     *month = month.checked_add(n)?;
@@ -40,7 +42,7 @@ fn month_add(year: &mut i32, month: &mut i32, n: i32) -> Option<()> {
     Some(())
 }
 
-#[cfg(any(feature = "chrono", feature = "time"))]
+#[cfg(any(feature = "chrono", feature = "jiff", feature = "time"))]
 #[inline]
 fn date_add(year: &mut i32, month: &mut i32, date: &mut i32, n: i32) -> Option<()> {
     *date = date.checked_add(n)?;
@@ -81,7 +83,7 @@ fn date_add(year: &mut i32, month: &mut i32, date: &mut i32, n: i32) -> Option<(
     Some(())
 }
 
-#[cfg(any(feature = "chrono", feature = "time"))]
+#[cfg(any(feature = "chrono", feature = "jiff", feature = "time"))]
 #[inline]
 fn hour_add(year: &mut i32, month: &mut i32, date: &mut i32, hour: &mut i32, n: i32) -> Option<()> {
     *hour = hour.checked_add(n)?;
@@ -102,7 +104,7 @@ fn hour_add(year: &mut i32, month: &mut i32, date: &mut i32, hour: &mut i32, n: 
     Some(())
 }
 
-#[cfg(any(feature = "chrono", feature = "time"))]
+#[cfg(any(feature = "chrono", feature = "jiff", feature = "time"))]
 #[inline]
 fn minute_add(
     year: &mut i32,
@@ -130,7 +132,7 @@ fn minute_add(
     Some(())
 }
 
-#[cfg(any(feature = "chrono", feature = "time"))]
+#[cfg(any(feature = "chrono", feature = "jiff", feature = "time"))]
 #[inline]
 fn second_add(
     year: &mut i32,
@@ -159,7 +161,7 @@ fn second_add(
     Some(())
 }
 
-#[cfg(any(feature = "chrono", feature = "time"))]
+#[cfg(any(feature = "chrono", feature = "jiff", feature = "time"))]
 #[allow(clippy::too_many_arguments)]
 #[inline]
 fn nanosecond_add(
@@ -187,7 +189,7 @@ fn nanosecond_add(
     Some(())
 }
 
-#[cfg(any(feature = "chrono", feature = "time"))]
+#[cfg(any(feature = "chrono", feature = "jiff", feature = "time"))]
 fn add_date_time_parts(
     from: &impl DateTimeParts,
     date_time_diff: &impl DateTimeDiff,

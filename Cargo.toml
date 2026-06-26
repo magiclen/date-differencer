@@ -15,10 +15,12 @@ include = ["src/**/*", "Cargo.toml", "README.md", "LICENSE"]
 [features]
 default = []
 chrono = ["dep:chrono"]
+jiff = ["dep:jiff"]
 time = ["dep:time"]
 
 [dependencies]
 chrono = { version = "0.4", default-features = false, optional = true }
+jiff = { version = "0.2", default-features = false, optional = true }
 time = { version = "0.3", default-features = false, optional = true }
 
 year-helper = "0.2"
@@ -26,6 +28,7 @@ year-helper = "0.2"
 [dev-dependencies]
 rand = "0.9"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
+jiff = "0.2"
 time = { version = "0.3", default-features = false, features = ["local-offset"] }
 
 [[example]]
@@ -35,6 +38,10 @@ required-features = ["chrono"]
 [[example]]
 name = "time"
 required-features = ["time"]
+
+[[example]]
+name = "jiff"
+required-features = ["jiff"]
 
 [package.metadata.docs.rs]
 all-features = true

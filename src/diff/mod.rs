@@ -1,5 +1,7 @@
 #[cfg(feature = "chrono")]
 mod chrono_support;
+#[cfg(feature = "jiff")]
+mod jiff_support;
 #[cfg(feature = "time")]
 mod time_support;
 

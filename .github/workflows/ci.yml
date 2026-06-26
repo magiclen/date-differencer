@@ -40,6 +40,7 @@ jobs:
           -
           - --features chrono
           - --features time
+          - --features jiff
           - --all-features
     name: Test ${{ matrix.toolchain }} on ${{ matrix.os }} (${{ matrix.features }})
     runs-on: ${{ matrix.os }}
@@ -65,6 +66,7 @@ jobs:
           -
           - --features chrono
           - --features time
+          - --features jiff
           - --all-features
     name: Test ${{ matrix.toolchain }} on ${{ matrix.os }} (${{ matrix.features }})
     runs-on: ${{ matrix.os }}
