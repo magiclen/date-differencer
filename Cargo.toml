@@ -12,11 +12,17 @@ description = "Calculate the time interval between two supported date-time value
 license = "MIT"
 include = ["src/**/*", "Cargo.toml", "README.md", "LICENSE"]
 
-[features]
-default = []
-chrono = ["dep:chrono"]
-jiff = ["dep:jiff"]
-time = ["dep:time"]
+[[example]]
+name = "chrono"
+required-features = ["chrono"]
+
+[[example]]
+name = "time"
+required-features = ["time"]
+
+[[example]]
+name = "jiff"
+required-features = ["jiff"]
 
 [dependencies]
 chrono = { version = "0.4", default-features = false, optional = true }
@@ -31,17 +37,11 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 jiff = "0.2"
 time = { version = "0.3", default-features = false, features = ["local-offset"] }
 
-[[example]]
-name = "chrono"
-required-features = ["chrono"]
-
-[[example]]
-name = "time"
-required-features = ["time"]
-
-[[example]]
-name = "jiff"
-required-features = ["jiff"]
+[features]
+default = []
+chrono = ["dep:chrono"]
+jiff = ["dep:jiff"]
+time = ["dep:time"]
 
 [package.metadata.docs.rs]
 all-features = true
