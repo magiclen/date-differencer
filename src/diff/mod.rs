@@ -418,7 +418,7 @@ fn _date_diff(earlier: &WallClock, later: &WallClock, start_from_later: bool) ->
 
                 months = month_diff + 12;
             } else {
-                // e.g. 2009-11-02 to 2010-03-04
+                // e.g. 2009-11-04 to 2010-03-02
 
                 months = month_diff + 11;
             }
@@ -452,7 +452,7 @@ fn _date_diff(earlier: &WallClock, later: &WallClock, start_from_later: bool) ->
             days = later_date as i32 - earlier_date as i32;
         }
     } else {
-        // e.g. 2010-01-02 to 2010-03-01, 2009-11-02 to 2010-03-04, 2009-12-04 to 2010-12-02
+        // e.g. 2010-01-02 to 2010-03-01, 2009-11-04 to 2010-03-02, 2009-12-04 to 2010-12-02
 
         if start_from_later {
             if earlier_month < 12 {
