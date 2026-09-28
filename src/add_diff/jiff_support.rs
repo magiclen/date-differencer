@@ -2,7 +2,7 @@ use core::fmt;
 
 use jiff::{Zoned, civil::DateTime};
 
-use super::{AddDateTimeDiff, AddedDateTimeParts, DateTimeDiff, add_date_time_parts};
+use super::{AddDateTimeDiff, DateTimeDiff, DateTimeFields, add_date_time_parts};
 
 #[inline]
 fn jiff_error(args: fmt::Arguments<'_>) -> jiff::Error {
@@ -13,7 +13,7 @@ fn jiff_error(args: fmt::Arguments<'_>) -> jiff::Error {
 fn added_date_time_parts(
     from: &impl super::DateTimeParts,
     date_time_diff: &impl DateTimeDiff,
-) -> Result<AddedDateTimeParts, jiff::Error> {
+) -> Result<DateTimeFields, jiff::Error> {
     add_date_time_parts(from, date_time_diff).ok_or_else(|| {
         jiff_error(format_args!("date-time addition overflowed before constructing the Jiff value"))
     })

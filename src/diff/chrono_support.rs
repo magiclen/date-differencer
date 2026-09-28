@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, NaiveDateTime, Timelike};
+use chrono::{DateTime, Datelike, NaiveDateTime, Offset, Timelike};
 
 use super::DateTimeParts;
 
@@ -39,7 +39,24 @@ where
 
     #[inline]
     fn nanosecond(&self) -> u32 {
-        Timelike::nanosecond(self)
+        // chrono represents a leap second with 1_000_000_000 or more nanoseconds, so treat it as the last nanosecond of the second.
+        Timelike::nanosecond(self).min(999_999_999)
+    }
+
+    #[inline]
+    fn all_parts(&self) -> (i32, u8, u8, u8, u8, u8, u32) {
+        // Calculate the local date-time only once instead of once per field.
+        self.naive_local().all_parts()
+    }
+
+    #[inline]
+    fn to_same_time_zone(&self, other: Self) -> Self {
+        // Looking up a time zone such as `Local` is slow, so skip the conversion when the offsets are already the same.
+        if self.offset().fix() == other.offset().fix() {
+            other
+        } else {
+            other.with_timezone(&self.timezone())
+        }
     }
 }
 
@@ -76,6 +93,7 @@ impl DateTimeParts for NaiveDateTime {
 
     #[inline]
     fn nanosecond(&self) -> u32 {
-        Timelike::nanosecond(self)
+        // chrono represents a leap second with 1_000_000_000 or more nanoseconds, so treat it as the last nanosecond of the second.
+        Timelike::nanosecond(self).min(999_999_999)
     }
 }

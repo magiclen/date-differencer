@@ -1,9 +1,9 @@
 use chrono::{DateTime, Duration, LocalResult, NaiveDate, NaiveDateTime, TimeZone};
 
-use super::{AddDateTimeDiff, AddedDateTimeParts, DateTimeDiff, add_date_time_parts};
+use super::{AddDateTimeDiff, DateTimeDiff, DateTimeFields, add_date_time_parts};
 
 #[inline]
-fn naive_date_time_from_parts(parts: AddedDateTimeParts) -> Option<NaiveDateTime> {
+fn naive_date_time_from_parts(parts: DateTimeFields) -> Option<NaiveDateTime> {
     NaiveDate::from_ymd_opt(parts.year, parts.month as u32, parts.day as u32)?.and_hms_nano_opt(
         parts.hour as u32,
         parts.minute as u32,

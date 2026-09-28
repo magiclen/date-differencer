@@ -1,9 +1,9 @@
 use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time, UtcDateTime};
 
-use super::{AddDateTimeDiff, AddedDateTimeParts, DateTimeDiff, add_date_time_parts};
+use super::{AddDateTimeDiff, DateTimeDiff, DateTimeFields, add_date_time_parts};
 
 #[inline]
-fn date_time_from_parts(parts: AddedDateTimeParts) -> Option<(Date, Time)> {
+fn date_time_from_parts(parts: DateTimeFields) -> Option<(Date, Time)> {
     let date =
         Date::from_calendar_date(parts.year, Month::try_from(parts.month).ok()?, parts.day).ok()?;
 

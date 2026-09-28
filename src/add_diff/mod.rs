@@ -7,36 +7,21 @@ mod time_support;
 
 #[cfg(any(feature = "chrono", feature = "jiff", feature = "time"))]
 use super::constants::*;
-use super::{DateTimeDiff, DateTimeParts};
-
 #[cfg(any(feature = "chrono", feature = "jiff", feature = "time"))]
-#[derive(Debug, Clone, Copy)]
-struct AddedDateTimeParts {
-    year:       i32,
-    month:      u8,
-    day:        u8,
-    hour:       u8,
-    minute:     u8,
-    second:     u8,
-    nanosecond: u32,
-}
+use super::diff::DateTimeFields;
+use super::{DateTimeDiff, DateTimeParts};
 
 #[cfg(any(feature = "chrono", feature = "jiff", feature = "time"))]
 #[inline]
 fn month_add(year: &mut i32, month: &mut i32, n: i32) -> Option<()> {
-    *month = month.checked_add(n)?;
+    // The carry functions add in `i64` so a large `n` cannot overflow, and use Euclidean division so a negative total borrows the right amount.
+    let total = i64::from(*month) + i64::from(n);
 
-    if *month >= 12 {
-        *year = year.checked_add(*month / 12)?;
-        *month %= 12;
-    } else if *month < 0 {
-        *year = year.checked_add(*month / 12 - 1)?;
-
-        *month = 12 - (-*month % 12);
-
-        if *month == 12 {
-            *month = 0;
-        }
+    if (0..12).contains(&total) {
+        *month = total as i32;
+    } else {
+        *year = year.checked_add(total.div_euclid(12) as i32)?;
+        *month = total.rem_euclid(12) as i32;
     }
 
     Some(())
@@ -86,19 +71,13 @@ fn date_add(year: &mut i32, month: &mut i32, date: &mut i32, n: i32) -> Option<(
 #[cfg(any(feature = "chrono", feature = "jiff", feature = "time"))]
 #[inline]
 fn hour_add(year: &mut i32, month: &mut i32, date: &mut i32, hour: &mut i32, n: i32) -> Option<()> {
-    *hour = hour.checked_add(n)?;
+    let total = i64::from(*hour) + i64::from(n);
 
-    if *hour >= 24 {
-        date_add(year, month, date, *hour / 24)?;
-        *hour %= 24;
-    } else if *hour < 0 {
-        date_add(year, month, date, *hour / 24 - 1)?;
-
-        *hour = 24 - (-*hour % 24);
-
-        if *hour == 24 {
-            *hour = 0;
-        }
+    if (0..24).contains(&total) {
+        *hour = total as i32;
+    } else {
+        date_add(year, month, date, total.div_euclid(24) as i32)?;
+        *hour = total.rem_euclid(24) as i32;
     }
 
     Some(())
@@ -114,19 +93,13 @@ fn minute_add(
     minute: &mut i32,
     n: i32,
 ) -> Option<()> {
-    *minute = minute.checked_add(n)?;
+    let total = i64::from(*minute) + i64::from(n);
 
-    if *minute >= 60 {
-        hour_add(year, month, date, hour, *minute / 60)?;
-        *minute %= 60;
-    } else if *minute < 0 {
-        hour_add(year, month, date, hour, *minute / 60 - 1)?;
-
-        *minute = 60 - (-*minute % 60);
-
-        if *minute == 60 {
-            *minute = 0;
-        }
+    if (0..60).contains(&total) {
+        *minute = total as i32;
+    } else {
+        hour_add(year, month, date, hour, total.div_euclid(60) as i32)?;
+        *minute = total.rem_euclid(60) as i32;
     }
 
     Some(())
@@ -143,19 +116,13 @@ fn second_add(
     second: &mut i32,
     n: i32,
 ) -> Option<()> {
-    *second = second.checked_add(n)?;
+    let total = i64::from(*second) + i64::from(n);
 
-    if *second >= 60 {
-        minute_add(year, month, date, hour, minute, *second / 60)?;
-        *second %= 60;
-    } else if *second < 0 {
-        minute_add(year, month, date, hour, minute, *second / 60 - 1)?;
-
-        *second = 60 - (-*second % 60);
-
-        if *second == 60 {
-            *second = 0;
-        }
+    if (0..60).contains(&total) {
+        *second = total as i32;
+    } else {
+        minute_add(year, month, date, hour, minute, total.div_euclid(60) as i32)?;
+        *second = total.rem_euclid(60) as i32;
     }
 
     Some(())
@@ -174,17 +141,24 @@ fn nanosecond_add(
     nanosecond: &mut i32,
     n: i32,
 ) -> Option<()> {
-    const SECOND_NANOSECONDS_I32: i32 = SECOND_NANOSECONDS as i32;
+    const SECOND_NANOSECONDS_I64: i64 = SECOND_NANOSECONDS as i64;
 
-    let total_nanoseconds = nanosecond.checked_add(n)?;
-    let seconds = total_nanoseconds.div_euclid(SECOND_NANOSECONDS_I32);
-    let normalized_nanoseconds = total_nanoseconds.rem_euclid(SECOND_NANOSECONDS_I32);
+    let total = i64::from(*nanosecond) + i64::from(n);
 
-    if seconds != 0 {
-        second_add(year, month, date, hour, minute, second, seconds)?;
+    if (0..SECOND_NANOSECONDS_I64).contains(&total) {
+        *nanosecond = total as i32;
+    } else {
+        second_add(
+            year,
+            month,
+            date,
+            hour,
+            minute,
+            second,
+            total.div_euclid(SECOND_NANOSECONDS_I64) as i32,
+        )?;
+        *nanosecond = total.rem_euclid(SECOND_NANOSECONDS_I64) as i32;
     }
-
-    *nanosecond = normalized_nanoseconds;
 
     Some(())
 }
@@ -193,13 +167,15 @@ fn nanosecond_add(
 fn add_date_time_parts(
     from: &impl DateTimeParts,
     date_time_diff: &impl DateTimeDiff,
-) -> Option<AddedDateTimeParts> {
-    let mut year = from.year().checked_add(date_time_diff.years())?;
-    let mut month = from.month() as i32 - 1;
+) -> Option<DateTimeFields> {
+    let from = DateTimeFields::from_parts(from);
+
+    let mut year = from.year.checked_add(date_time_diff.years())?;
+    let mut month = from.month as i32 - 1;
 
     month_add(&mut year, &mut month, date_time_diff.months())?;
 
-    let mut date = from.day() as i32;
+    let mut date = from.day as i32;
 
     let days_in_month = year_helper::get_days_in_month(year, (month + 1) as u8).unwrap() as i32;
 
@@ -209,15 +185,15 @@ fn add_date_time_parts(
 
     date_add(&mut year, &mut month, &mut date, date_time_diff.days())?;
 
-    let mut hour = from.hour() as i32;
+    let mut hour = from.hour as i32;
 
     hour_add(&mut year, &mut month, &mut date, &mut hour, date_time_diff.hours())?;
 
-    let mut minute = from.minute() as i32;
+    let mut minute = from.minute as i32;
 
     minute_add(&mut year, &mut month, &mut date, &mut hour, &mut minute, date_time_diff.minutes())?;
 
-    let mut second = from.second() as i32;
+    let mut second = from.second as i32;
 
     second_add(
         &mut year,
@@ -229,7 +205,7 @@ fn add_date_time_parts(
         date_time_diff.seconds(),
     )?;
 
-    let mut nanosecond = from.nanosecond() as i32;
+    let mut nanosecond = from.nanosecond as i32;
 
     nanosecond_add(
         &mut year,
@@ -242,7 +218,7 @@ fn add_date_time_parts(
         date_time_diff.nanoseconds(),
     )?;
 
-    Some(AddedDateTimeParts {
+    Some(DateTimeFields {
         year,
         month: (month + 1) as u8,
         day: date as u8,
@@ -254,6 +230,13 @@ fn add_date_time_parts(
 }
 
 /// A trait for date-time types that can apply a `DateTimeDiff`.
+///
+/// The `Output` type depends on the date-time type.
+///
+/// * `chrono::NaiveDateTime`: `Option<NaiveDateTime>`, which is `None` if the result is out of range.
+/// * `chrono::DateTime<Tz>`: `LocalResult<DateTime<Tz>>`, which is `None` if the result does not exist in the time zone (for example, in a DST gap) and `Ambiguous` if it exists twice (for example, in a DST overlap).
+/// * `time::PrimitiveDateTime`, `time::OffsetDateTime` and `time::UtcDateTime`: `Option<_>`, which is `None` if the result is out of range. `OffsetDateTime` keeps the offset of `from`.
+/// * `jiff::civil::DateTime` and `jiff::Zoned`: `Result<_, jiff::Error>`. `Zoned` resolves a DST gap or overlap with the default rules of Jiff.
 pub trait AddDateTimeDiff: DateTimeParts {
     type Output;
 
@@ -261,6 +244,10 @@ pub trait AddDateTimeDiff: DateTimeParts {
 }
 
 /// Calculate `from` + `date_time_diff`.
+///
+/// Years and months are added first, and the day is changed to the last day of the month if that month is shorter.
+/// Then days, hours, minutes, seconds and nanoseconds are added in this order.
+/// See `AddDateTimeDiff` for the output type.
 ///
 /// # Example
 ///

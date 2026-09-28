@@ -1,7 +1,7 @@
 #![cfg(any(feature = "chrono", feature = "jiff", feature = "time"))]
 
 #[cfg(feature = "chrono")]
-use chrono::{DateTime, Duration as ChronoDuration, Local, TimeZone, Utc};
+use chrono::{DateTime, Duration as ChronoDuration, FixedOffset, Local, TimeZone, Utc};
 use date_differencer::*;
 #[cfg(feature = "jiff")]
 use jiff::{
@@ -10,7 +10,9 @@ use jiff::{
     tz::{self, TimeZone as JiffTimeZone},
 };
 #[cfg(feature = "time")]
-use time::{Date, Duration as TimeDuration, Month, OffsetDateTime, PrimitiveDateTime, Time};
+use time::{
+    Date, Duration as TimeDuration, Month, OffsetDateTime, PrimitiveDateTime, Time, UtcOffset,
+};
 
 #[derive(Debug, Clone, Copy)]
 struct DateTimeFields {
@@ -41,8 +43,8 @@ fn assert_bidirectional_diff<DT>(
     expect_date_time_result: DateTimeDiffResult,
 ) where
     DT: DateTimeParts + Clone, {
-    assert_eq!(expect_date_result.clone(), date_diff(date.clone(), date_plus.clone()));
-    assert_eq!(expect_date_time_result.clone(), date_time_diff(date.clone(), date_plus.clone()));
+    assert_eq!(expect_date_result, date_diff(date.clone(), date_plus.clone()));
+    assert_eq!(expect_date_time_result, date_time_diff(date.clone(), date_plus.clone()));
 
     assert_eq!(expect_date_result.into_neg(), date_diff(date_plus.clone(), date.clone()));
     assert_eq!(expect_date_time_result.into_neg(), date_time_diff(date_plus, date));
@@ -64,12 +66,7 @@ fn assert_all_local_now_diff(
             LocalDiffAmount::Day => date + ChronoDuration::days(1),
         };
 
-        assert_bidirectional_diff(
-            date,
-            date_plus,
-            expect_date_result.clone(),
-            expect_date_time_result.clone(),
-        );
+        assert_bidirectional_diff(date, date_plus, expect_date_result, expect_date_time_result);
     }
 
     #[cfg(feature = "time")]
@@ -83,12 +80,7 @@ fn assert_all_local_now_diff(
             LocalDiffAmount::Day => date + TimeDuration::days(1),
         };
 
-        assert_bidirectional_diff(
-            date,
-            date_plus,
-            expect_date_result.clone(),
-            expect_date_time_result.clone(),
-        );
+        assert_bidirectional_diff(date, date_plus, expect_date_result, expect_date_time_result);
     }
 
     #[cfg(feature = "jiff")]
@@ -118,8 +110,8 @@ fn assert_all_fixed_diff(
         assert_bidirectional_diff(
             chrono_local_date_time(date),
             chrono_local_date_time(date_plus),
-            expect_date_result.clone(),
-            expect_date_time_result.clone(),
+            expect_date_result,
+            expect_date_time_result,
         );
     }
 
@@ -128,8 +120,8 @@ fn assert_all_fixed_diff(
         assert_bidirectional_diff(
             time_date_time(date),
             time_date_time(date_plus),
-            expect_date_result.clone(),
-            expect_date_time_result.clone(),
+            expect_date_result,
+            expect_date_time_result,
         );
     }
 
@@ -204,6 +196,25 @@ fn chrono_utc_date_time(fields: DateTimeFields) -> DateTime<Utc> {
 }
 
 #[cfg(feature = "chrono")]
+fn chrono_fixed_offset_date_time(
+    fields: DateTimeFields,
+    offset_hours: i32,
+) -> DateTime<FixedOffset> {
+    FixedOffset::east_opt(offset_hours * 3600)
+        .unwrap()
+        .with_ymd_and_hms(
+            fields.year,
+            fields.month as u32,
+            fields.day as u32,
+            fields.hour as u32,
+            fields.minute as u32,
+            fields.second as u32,
+        )
+        .unwrap()
+        + ChronoDuration::nanoseconds(fields.nanosecond as i64)
+}
+
+#[cfg(feature = "chrono")]
 fn chrono_random_date() -> DateTime<Utc> {
     let random_timestamp_millis: i64 = rand::random_range(-1_000_000_000_000..=3_000_000_000_000);
 
@@ -217,6 +228,11 @@ fn time_date_time(fields: DateTimeFields) -> PrimitiveDateTime {
             .unwrap(),
         Time::from_hms_nano(fields.hour, fields.minute, fields.second, fields.nanosecond).unwrap(),
     )
+}
+
+#[cfg(feature = "time")]
+fn time_offset_date_time(fields: DateTimeFields, offset_hours: i8) -> OffsetDateTime {
+    time_date_time(fields).assume_offset(UtcOffset::from_hms(offset_hours, 0, 0).unwrap())
 }
 
 #[cfg(feature = "time")]
@@ -243,6 +259,11 @@ fn jiff_date_time(fields: DateTimeFields) -> JiffDateTime {
 #[cfg(feature = "jiff")]
 fn jiff_time_zone() -> JiffTimeZone {
     JiffTimeZone::fixed(tz::offset(8))
+}
+
+#[cfg(feature = "jiff")]
+fn jiff_zoned(fields: DateTimeFields, offset_hours: i8) -> Zoned {
+    jiff_date_time(fields).to_zoned(JiffTimeZone::fixed(tz::offset(offset_hours))).unwrap()
 }
 
 #[cfg(feature = "jiff")]
@@ -570,4 +591,165 @@ fn add_date_time_diff_nanosecond_borrow_and_carry() {
             nanosecond: 0,
         },
     );
+}
+
+#[test]
+fn add_date_time_diff_negative_whole_units() {
+    assert_all_add_date_time_diff(
+        DateTimeFields {
+            year:       2024,
+            month:      1,
+            day:        15,
+            hour:       0,
+            minute:     0,
+            second:     0,
+            nanosecond: 0,
+        },
+        DateTimeDiffResult {
+            months: -12,
+            ..DateTimeDiffResult::default()
+        },
+        DateTimeFields {
+            year:       2023,
+            month:      1,
+            day:        15,
+            hour:       0,
+            minute:     0,
+            second:     0,
+            nanosecond: 0,
+        },
+    );
+    assert_all_add_date_time_diff(
+        DateTimeFields {
+            year:       2024,
+            month:      3,
+            day:        10,
+            hour:       0,
+            minute:     0,
+            second:     0,
+            nanosecond: 0,
+        },
+        DateTimeDiffResult {
+            hours: -24,
+            ..DateTimeDiffResult::default()
+        },
+        DateTimeFields {
+            year:       2024,
+            month:      3,
+            day:        9,
+            hour:       0,
+            minute:     0,
+            second:     0,
+            nanosecond: 0,
+        },
+    );
+    assert_all_add_date_time_diff(
+        DateTimeFields {
+            year:       2024,
+            month:      3,
+            day:        10,
+            hour:       1,
+            minute:     30,
+            second:     0,
+            nanosecond: 0,
+        },
+        DateTimeDiffResult {
+            minutes: -90,
+            ..DateTimeDiffResult::default()
+        },
+        DateTimeFields {
+            year:       2024,
+            month:      3,
+            day:        10,
+            hour:       0,
+            minute:     0,
+            second:     0,
+            nanosecond: 0,
+        },
+    );
+    assert_all_add_date_time_diff(
+        DateTimeFields {
+            year:       2024,
+            month:      3,
+            day:        10,
+            hour:       5,
+            minute:     6,
+            second:     0,
+            nanosecond: 0,
+        },
+        DateTimeDiffResult {
+            seconds: -60,
+            ..DateTimeDiffResult::default()
+        },
+        DateTimeFields {
+            year:       2024,
+            month:      3,
+            day:        10,
+            hour:       5,
+            minute:     5,
+            second:     0,
+            nanosecond: 0,
+        },
+    );
+}
+
+#[test]
+fn different_offsets() {
+    // 2024-01-01 10:00:00 +08:00 is 3 hours earlier than 2024-01-01 05:00:00 +00:00.
+    let date = DateTimeFields {
+        year:       2024,
+        month:      1,
+        day:        1,
+        hour:       10,
+        minute:     0,
+        second:     0,
+        nanosecond: 0,
+    };
+    let date_plus = DateTimeFields {
+        year:       2024,
+        month:      1,
+        day:        1,
+        hour:       5,
+        minute:     0,
+        second:     0,
+        nanosecond: 0,
+    };
+
+    let expect_date_result = DateDiffResult::default();
+    let expect_date_time_result = DateTimeDiffResult {
+        hours: 3,
+        ..DateTimeDiffResult::default()
+    };
+
+    #[cfg(feature = "chrono")]
+    {
+        let date = chrono_fixed_offset_date_time(date, 8);
+        let date_plus = chrono_fixed_offset_date_time(date_plus, 0);
+
+        assert_bidirectional_diff(date, date_plus, expect_date_result, expect_date_time_result);
+        assert_eq!(date_plus, add_date_time_diff(date, &expect_date_time_result).unwrap());
+    }
+
+    #[cfg(feature = "time")]
+    {
+        let date = time_offset_date_time(date, 8);
+        let date_plus = time_offset_date_time(date_plus, 0);
+
+        assert_bidirectional_diff(date, date_plus, expect_date_result, expect_date_time_result);
+        assert_eq!(date_plus, add_date_time_diff(date, &expect_date_time_result).unwrap());
+    }
+
+    #[cfg(feature = "jiff")]
+    {
+        let date = jiff_zoned(date, 8);
+        let date_plus = jiff_zoned(date_plus, 0);
+
+        assert_bidirectional_diff(
+            date.clone(),
+            date_plus.clone(),
+            expect_date_result,
+            expect_date_time_result,
+        );
+        assert_eq!(date_plus, add_date_time_diff(date, &expect_date_time_result).unwrap());
+    }
 }

@@ -25,9 +25,9 @@ name = "jiff"
 required-features = ["jiff"]
 
 [dependencies]
-chrono = { version = "0.4", default-features = false, optional = true }
-jiff = { version = "0.2", default-features = false, optional = true }
-time = { version = "0.3", default-features = false, optional = true }
+chrono = { version = "0.4.23", default-features = false, optional = true }
+jiff = { version = "0.2.11", default-features = false, optional = true }
+time = { version = "0.3.38", default-features = false, optional = true }
 
 year-helper = "0.2"
 

@@ -74,4 +74,13 @@ impl DateTimeParts for Zoned {
     fn nanosecond(&self) -> u32 {
         self.subsec_nanosecond() as u32
     }
+
+    #[inline]
+    fn to_same_time_zone(&self, other: Self) -> Self {
+        if self.time_zone() == other.time_zone() {
+            other
+        } else {
+            other.with_time_zone(self.time_zone().clone())
+        }
+    }
 }

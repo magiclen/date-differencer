@@ -102,6 +102,11 @@ impl DateTimeParts for OffsetDateTime {
 
         nanosecond
     }
+
+    #[inline]
+    fn to_same_time_zone(&self, other: Self) -> Self {
+        other.checked_to_offset(self.offset()).unwrap_or(other)
+    }
 }
 
 impl DateTimeParts for UtcDateTime {

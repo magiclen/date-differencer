@@ -52,7 +52,7 @@ println!("{:?}", date_time_diff(a, b));
 println!("{}", add_date_time_diff(a, &date_time_diff(a, b)).unwrap()); // the same as b
 ```
 
-This library can handle leap years and odd/even number of days in a month correctly. The result of following code is a bit confusing but reasonable.
+This library can handle leap years and odd/even number of days in a month correctly. The result of the following code is a bit confusing but reasonable.
 
 ```rust
 use chrono::prelude::*;

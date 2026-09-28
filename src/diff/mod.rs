@@ -18,7 +18,7 @@ struct TimeDiffResult {
 }
 
 /// The result of the `date_diff` function.
-#[derive(Debug, Default, Clone, Eq, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct DateDiffResult {
     pub years:  i32,
     pub months: i32,
@@ -37,6 +37,62 @@ impl DateDiffResult {
     }
 }
 
+/// The date and time fields of a date-time value.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct DateTimeFields {
+    pub(crate) year:       i32,
+    pub(crate) month:      u8,
+    pub(crate) day:        u8,
+    pub(crate) hour:       u8,
+    pub(crate) minute:     u8,
+    pub(crate) second:     u8,
+    pub(crate) nanosecond: u32,
+}
+
+impl DateTimeFields {
+    #[inline]
+    pub(crate) fn from_parts(date_time: &impl DateTimeParts) -> Self {
+        let (year, month, day, hour, minute, second, nanosecond) = date_time.all_parts();
+
+        Self {
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+            nanosecond,
+        }
+    }
+}
+
+/// The wall-clock date and time of a date-time value.
+// The field order matters because `Ord` is derived.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+struct WallClock {
+    year:               i32,
+    month:              u8,
+    day:                u8,
+    nanoseconds_of_day: u64,
+}
+
+impl WallClock {
+    #[inline]
+    fn from_parts(date_time: &impl DateTimeParts) -> Self {
+        let fields = DateTimeFields::from_parts(date_time);
+
+        Self {
+            year:               fields.year,
+            month:              fields.month,
+            day:                fields.day,
+            nanoseconds_of_day: (fields.hour as u64 * HOUR_NANOSECONDS)
+                + (fields.minute as u64 * MINUTE_NANOSECONDS)
+                + (fields.second as u64 * SECOND_NANOSECONDS)
+                + fields.nanosecond as u64,
+        }
+    }
+}
+
 #[derive(Debug)]
 struct _DateDiffResult {
     pub(crate) earlier_nanoseconds_of_day: u64,
@@ -45,7 +101,7 @@ struct _DateDiffResult {
 }
 
 /// The result of the `date_time_diff` function.
-#[derive(Debug, Default, Clone, Eq, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct DateTimeDiffResult {
     pub years:       i32,
     pub months:      i32,
@@ -132,20 +188,58 @@ pub trait DateTimeDiff {
 }
 
 /// A trait to expose the date and time fields used by this crate.
+///
+/// The fields describe the wall-clock date and time of the value.
+/// Each method must return a value in the range written in its documentation, otherwise the functions of this crate may panic.
+///
+/// This trait is also implemented for `chrono` types.
+/// If `chrono::Datelike` or `chrono::Timelike` is in scope at the same time (for example, by `use chrono::prelude::*;` and `use date_differencer::*;`), calling a method such as `year()` on a `chrono` value is ambiguous and does not compile.
+/// To avoid this, import only the items you need from this crate (for example, `use date_differencer::{date_diff, date_time_diff};`), or call the method with its full path (for example, `Datelike::year(&date_time)`).
 pub trait DateTimeParts: Ord {
+    /// Returns the year.
     fn year(&self) -> i32;
 
+    /// Returns the month, from `1` to `12`.
     fn month(&self) -> u8;
 
+    /// Returns the day of the month, from `1` to the number of days in the month.
     fn day(&self) -> u8;
 
+    /// Returns the hour, from `0` to `23`.
     fn hour(&self) -> u8;
 
+    /// Returns the minute, from `0` to `59`.
     fn minute(&self) -> u8;
 
+    /// Returns the second, from `0` to `59`.
     fn second(&self) -> u8;
 
+    /// Returns the nanosecond, from `0` to `999_999_999`.
     fn nanosecond(&self) -> u32;
+
+    /// Returns all fields at once, in the order of year, month, day, hour, minute, second and nanosecond.
+    #[doc(hidden)]
+    #[inline]
+    fn all_parts(&self) -> (i32, u8, u8, u8, u8, u8, u32) {
+        (
+            self.year(),
+            self.month(),
+            self.day(),
+            self.hour(),
+            self.minute(),
+            self.second(),
+            self.nanosecond(),
+        )
+    }
+
+    /// Converts `other` to the time zone of `self` without changing the instant it represents.
+    #[doc(hidden)]
+    #[inline]
+    fn to_same_time_zone(&self, other: Self) -> Self
+    where
+        Self: Sized, {
+        other
+    }
 }
 
 impl DateTimeDiff for DateDiffResult {
@@ -235,29 +329,17 @@ const fn _time_diff(
     _nanoseconds_to_units(nanoseconds)
 }
 
-#[inline]
-fn _date_time_nanoseconds_of_day(date_time: &impl DateTimeParts) -> u64 {
-    (date_time.hour() as u64 * HOUR_NANOSECONDS)
-        + (date_time.minute() as u64 * MINUTE_NANOSECONDS)
-        + (date_time.second() as u64 * SECOND_NANOSECONDS)
-        + date_time.nanosecond() as u64
-}
+fn _date_diff(earlier: &WallClock, later: &WallClock, start_from_later: bool) -> _DateDiffResult {
+    let mut earlier_year = earlier.year;
+    let mut earlier_month = earlier.month;
+    let mut earlier_date = earlier.day;
 
-fn _date_diff(
-    earlier: &impl DateTimeParts,
-    later: &impl DateTimeParts,
-    start_from_later: bool,
-) -> _DateDiffResult {
-    let mut earlier_year = earlier.year();
-    let mut earlier_month = earlier.month();
-    let mut earlier_date = earlier.day();
+    let mut later_year = later.year;
+    let mut later_month = later.month;
+    let mut later_date = later.day;
 
-    let mut later_year = later.year();
-    let mut later_month = later.month();
-    let mut later_date = later.day();
-
-    let later_nanoseconds_of_day = _date_time_nanoseconds_of_day(later);
-    let earlier_nanoseconds_of_day = _date_time_nanoseconds_of_day(earlier);
+    let later_nanoseconds_of_day = later.nanoseconds_of_day;
+    let earlier_nanoseconds_of_day = earlier.nanoseconds_of_day;
 
     let years: i32;
     let months: i32;
@@ -409,7 +491,12 @@ fn _date_diff(
     }
 }
 
-/// Calculate the difference between two `DateTime` instances.
+/// Calculate the difference between two date-time values in years, months and days.
+///
+/// The result is positive when `to` is later than `from`, and negative when `to` is earlier than `from`.
+/// If the two values are in different time zones, `to` is converted to the time zone of `from` first.
+/// Then the result is calculated with the wall-clock date and time in that time zone.
+/// Only complete days are counted, so a remaining time shorter than a day is dropped.
 ///
 /// # Example
 ///
@@ -435,6 +522,9 @@ fn _date_diff(
 /// ```
 #[inline]
 pub fn date_diff<DT: DateTimeParts>(from: DT, to: DT) -> DateDiffResult {
+    let to = WallClock::from_parts(&from.to_same_time_zone(to));
+    let from = WallClock::from_parts(&from);
+
     match to.cmp(&from) {
         Ordering::Greater => _date_diff(&from, &to, false).result,
         Ordering::Less => _date_diff(&to, &from, true).result.into_neg(),
@@ -442,7 +532,11 @@ pub fn date_diff<DT: DateTimeParts>(from: DT, to: DT) -> DateDiffResult {
     }
 }
 
-/// Calculate the difference between two `DateTime` instances.
+/// Calculate the difference between two date-time values in years, months, days, hours, minutes, seconds and nanoseconds.
+///
+/// The result is positive when `to` is later than `from`, and negative when `to` is earlier than `from`.
+/// If the two values are in different time zones, `to` is converted to the time zone of `from` first.
+/// Then the result is calculated with the wall-clock date and time in that time zone.
 ///
 /// # Example
 ///
@@ -469,6 +563,9 @@ pub fn date_diff<DT: DateTimeParts>(from: DT, to: DT) -> DateDiffResult {
 /// ```
 #[inline]
 pub fn date_time_diff<DT: DateTimeParts>(from: DT, to: DT) -> DateTimeDiffResult {
+    let to = WallClock::from_parts(&from.to_same_time_zone(to));
+    let from = WallClock::from_parts(&from);
+
     match to.cmp(&from) {
         Ordering::Greater => {
             let date_diff = _date_diff(&from, &to, false);
